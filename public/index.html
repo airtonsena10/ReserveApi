@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reserve API — Demo</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --border: #2d3a4f;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      background: var(--surface);
+    }
+
+    header h1 { font-size: 1.15rem; font-weight: 600; }
+    header p { color: var(--muted); font-size: 0.85rem; }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+    }
+
+    .card h2 {
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      margin-bottom: 0.75rem;
+      font: inherit;
+    }
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 0.55rem 0.9rem;
+      font: inherit;
+      cursor: pointer;
+      background: var(--accent);
+      color: white;
+      transition: background 0.15s;
+    }
+
+    button:hover { background: var(--accent-hover); }
+    button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    button.secondary:hover { border-color: var(--accent); }
+    button.danger { background: var(--danger); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .status.ok { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+    .status.warn { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .status.err { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+    .list { display: grid; gap: 0.75rem; }
+
+    .item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem;
+      background: var(--bg);
+    }
+
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .item-title { font-weight: 600; font-size: 0.95rem; }
+    .item-meta { font-size: 0.8rem; color: var(--muted); }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .badge.pendente { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+    .badge.confirmada { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+    .badge.cancelada { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+
+    pre {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem;
+      overflow: auto;
+      font-size: 0.78rem;
+      max-height: 280px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .empty { color: var(--muted); font-size: 0.9rem; text-align: center; padding: 1.5rem; }
+
+    .hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.5rem;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Reserve API — Demo</h1>
+      <p>Interface simples para testar reservas, idempotência e auditoria</p>
+    </div>
+    <div id="authStatus" class="status warn">Desconectado</div>
+  </header>
+
+  <main>
+    <section class="grid">
+      <article class="card" id="loginCard">
+        <h2>Autenticação</h2>
+        <label for="email">E-mail</label>
+        <input id="email" type="email" value="airton@example.com" autocomplete="username">
+
+        <label for="senha">Senha</label>
+        <input id="senha" type="password" value="reserva123" autocomplete="current-password">
+
+        <div class="row">
+          <button id="btnLogin">Entrar</button>
+          <button class="secondary" id="btnLogout" disabled>Sair</button>
+        </div>
+        <p class="hint">Usuários do seed: airton@example.com ou sena@example.com — senha: reserva123</p>
+      </article>
+
+      <article class="card hidden" id="appCard">
+        <h2>Estúdios</h2>
+        <div id="estudiosList" class="list"></div>
+        <div class="row" style="margin-top: 0.75rem">
+          <button class="secondary" id="btnRefreshEstudios">Atualizar estúdios</button>
+        </div>
+      </article>
+    </section>
+
+    <section class="card hidden" id="reservasCard">
+      <h2>Minhas reservas</h2>
+      <div id="reservasList" class="list"></div>
+      <div class="row" style="margin-top: 0.75rem">
+        <button class="secondary" id="btnRefreshReservas">Atualizar reservas</button>
+      </div>
+    </section>
+
+    <section class="card hidden" id="idempotencyCard">
+      <h2>Teste de idempotência</h2>
+      <label for="idempotencyKey">Idempotency-Key</label>
+      <input id="idempotencyKey" readonly>
+
+      <div class="row">
+        <button class="secondary" id="btnNewKey">Gerar nova chave</button>
+        <button id="btnConfirmTwice" disabled>Confirmar 2x (mesma chave)</button>
+      </div>
+      <p class="hint">
+        Selecione uma reserva pendente e clique em "Confirmar 2x". A segunda requisição deve
+        retornar a mesma resposta sem criar outro evento de confirmação.
+      </p>
+      <pre id="idempotencyResult">Aguardando teste...</pre>
+    </section>
+
+    <section class="card hidden" id="eventosCard">
+      <h2>Histórico de auditoria</h2>
+      <p class="item-meta" style="margin-bottom: 0.75rem" id="eventosReservaLabel">Selecione uma reserva</p>
+      <div id="eventosList" class="list"></div>
+    </section>
+
+    <section class="card">
+      <h2>Última resposta da API</h2>
+      <pre id="lastResponse">Nenhuma requisição ainda.</pre>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      token: localStorage.getItem("token") || "",
+      usuario: JSON.parse(localStorage.getItem("usuario") || "null"),
+      selectedReservaId: "",
+      idempotencyKey: crypto.randomUUID()
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function setAuthStatus(connected) {
+      const el = $("authStatus");
+      if (connected) {
+        el.className = "status ok";
+        el.textContent = `Conectado: ${state.usuario?.nome ?? "usuário"}`;
+      } else {
+        el.className = "status warn";
+        el.textContent = "Desconectado";
+      }
+      $("btnLogout").disabled = !connected;
+      $("appCard").classList.toggle("hidden", !connected);
+      $("reservasCard").classList.toggle("hidden", !connected);
+      $("idempotencyCard").classList.toggle("hidden", !connected);
+      $("eventosCard").classList.toggle("hidden", !connected);
+    }
+
+    function showResponse(label, status, data) {
+      $("lastResponse").textContent = JSON.stringify({ label, status, data }, null, 2);
+    }
+
+    async function api(path, options = {}) {
+      const headers = { ...(options.headers || {}) };
+      if (state.token) headers.Authorization = `Bearer ${state.token}`;
+      if (options.body !== undefined) headers["Content-Type"] = "application/json";
+
+      const res = await fetch(path, { ...options, headers });
+      let data;
+      const text = await res.text();
+      try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+
+      showResponse(`${options.method || "GET"} ${path}`, res.status, data);
+      if (!res.ok) throw new Error(data?.message || `Erro ${res.status}`);
+      return data;
+    }
+
+    function renderEstudios(estudios) {
+      const container = $("estudiosList");
+      if (!estudios.length) {
+        container.innerHTML = '<p class="empty">Nenhum estúdio encontrado.</p>';
+        return;
+      }
+      container.innerHTML = estudios.map((e) => `
+        <div class="item">
+          <div class="item-header">
+            <div>
+              <div class="item-title">${e.nome}</div>
+              <div class="item-meta">${e.bairro}, ${e.cidade} — R$ ${e.valorDiaria}/dia</div>
+            </div>
+            <button data-reservar="${e.id}">Reservar</button>
+          </div>
+        </div>
+      `).join("");
+
+      container.querySelectorAll("[data-reservar]").forEach((btn) => {
+        btn.addEventListener("click", () => reservar(btn.dataset.reservar));
+      });
+    }
+
+    function renderReservas(reservas) {
+      const container = $("reservasList");
+      if (!reservas.length) {
+        container.innerHTML = '<p class="empty">Você ainda não tem reservas.</p>';
+        return;
+      }
+
+      container.innerHTML = reservas.map((r) => `
+        <div class="item">
+          <div class="item-header">
+            <div>
+              <div class="item-title">Reserva ${r.id.slice(0, 8)}…</div>
+              <div class="item-meta">Criada em ${new Date(r.criadaEm).toLocaleString("pt-BR")}</div>
+            </div>
+            <span class="badge ${r.status}">${r.status}</span>
+          </div>
+          <div class="row">
+            ${r.status === "pendente" ? `
+              <button data-confirmar="${r.id}">Confirmar</button>
+              <button class="secondary" data-select="${r.id}">Usar no teste 2x</button>
+            ` : ""}
+            ${r.status !== "cancelada" ? `<button class="danger" data-cancelar="${r.id}">Cancelar</button>` : ""}
+            <button class="secondary" data-eventos="${r.id}">Ver eventos</button>
+          </div>
+        </div>
+      `).join("");
+
+      container.querySelectorAll("[data-confirmar]").forEach((btn) => {
+        btn.addEventListener("click", () => confirmar(btn.dataset.confirmar, crypto.randomUUID()));
+      });
+      container.querySelectorAll("[data-select]").forEach((btn) => {
+        btn.addEventListener("click", () => selectReserva(btn.dataset.select));
+      });
+      container.querySelectorAll("[data-cancelar]").forEach((btn) => {
+        btn.addEventListener("click", () => cancelar(btn.dataset.cancelar));
+      });
+      container.querySelectorAll("[data-eventos]").forEach((btn) => {
+        btn.addEventListener("click", () => carregarEventos(btn.dataset.eventos));
+      });
+    }
+
+    function renderEventos(eventos) {
+      const container = $("eventosList");
+      if (!eventos.length) {
+        container.innerHTML = '<p class="empty">Sem eventos registrados.</p>';
+        return;
+      }
+      container.innerHTML = eventos.map((ev) => `
+        <div class="item">
+          <div class="item-header">
+            <div>
+              <div class="item-title">${ev.statusAnterior ?? "—"} → ${ev.statusNovo}</div>
+              <div class="item-meta">${new Date(ev.criadaEm).toLocaleString("pt-BR")}</div>
+            </div>
+          </div>
+          ${ev.metadata ? `<pre>${JSON.stringify(ev.metadata, null, 2)}</pre>` : ""}
+        </div>
+      `).join("");
+    }
+
+    function selectReserva(id) {
+      state.selectedReservaId = id;
+      $("btnConfirmTwice").disabled = false;
+      $("eventosReservaLabel").textContent = `Reserva selecionada: ${id}`;
+    }
+
+    function updateIdempotencyKey() {
+      state.idempotencyKey = crypto.randomUUID();
+      $("idempotencyKey").value = state.idempotencyKey;
+    }
+
+    async function login() {
+      const data = await api("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: $("email").value, senha: $("senha").value })
+      });
+      state.token = data.token;
+      state.usuario = data.usuario;
+      localStorage.setItem("token", state.token);
+      localStorage.setItem("usuario", JSON.stringify(state.usuario));
+      setAuthStatus(true);
+      await Promise.all([carregarEstudios(), carregarReservas()]);
+    }
+
+    function logout() {
+      state.token = "";
+      state.usuario = null;
+      localStorage.removeItem("token");
+      localStorage.removeItem("usuario");
+      setAuthStatus(false);
+    }
+
+    async function carregarEstudios() {
+      const estudios = await api("/estudios");
+      renderEstudios(estudios);
+    }
+
+    async function reservar(estudioId) {
+      await api(`/estudios/${estudioId}/reservar`, { method: "POST" });
+      await carregarReservas();
+    }
+
+    async function carregarReservas() {
+      const reservas = await api("/reservas/minhas");
+      renderReservas(reservas);
+    }
+
+    async function confirmar(reservaId, key) {
+      await api(`/reservas/${reservaId}/confirmar`, {
+        method: "POST",
+        headers: { "Idempotency-Key": key }
+      });
+      await carregarReservas();
+      await carregarEventos(reservaId);
+    }
+
+    async function cancelar(reservaId) {
+      await api(`/reservas/${reservaId}/cancelar`, { method: "POST" });
+      await carregarReservas();
+      await carregarEventos(reservaId);
+    }
+
+    async function carregarEventos(reservaId) {
+      selectReserva(reservaId);
+      const eventos = await api(`/reservas/${reservaId}/eventos`);
+      renderEventos(eventos);
+    }
+
+    async function confirmarDuasVezes() {
+      if (!state.selectedReservaId) return;
+      const key = state.idempotencyKey;
+      const url = `/reservas/${state.selectedReservaId}/confirmar`;
+      const headers = { "Idempotency-Key": key };
+
+      const res1 = await api(url, { method: "POST", headers });
+      const res2 = await api(url, { method: "POST", headers });
+
+      const iguais = JSON.stringify(res1) === JSON.stringify(res2);
+      $("idempotencyResult").textContent = JSON.stringify({
+        chave: key,
+        respostasIdenticas: iguais,
+        primeira: res1,
+        segunda: res2
+      }, null, 2);
+
+      await carregarReservas();
+      await carregarEventos(state.selectedReservaId);
+    }
+
+    $("btnLogin").addEventListener("click", () => login().catch((e) => alert(e.message)));
+    $("btnLogout").addEventListener("click", logout);
+    $("btnRefreshEstudios").addEventListener("click", () => carregarEstudios().catch((e) => alert(e.message)));
+    $("btnRefreshReservas").addEventListener("click", () => carregarReservas().catch((e) => alert(e.message)));
+    $("btnNewKey").addEventListener("click", updateIdempotencyKey);
+    $("btnConfirmTwice").addEventListener("click", () => confirmarDuasVezes().catch((e) => alert(e.message)));
+
+    updateIdempotencyKey();
+    setAuthStatus(!!state.token);
+    if (state.token) {
+      Promise.all([carregarEstudios(), carregarReservas()]).catch(() => logout());
+    }
+  </script>
+</body>
+</html>
