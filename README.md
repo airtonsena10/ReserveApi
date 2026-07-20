@@ -1,17 +1,98 @@
-# Reserve API
+# 📅 Reserve API
 
-API REST de reservas de estúdios com **idempotência** na confirmação e **auditoria** completa de mudanças de status. 
+API REST de reservas de estúdios com **idempotência** na confirmação e **auditoria** completa de mudanças de status.
 
-## Stack
+[![Deploy](https://img.shields.io/badge/🚀_Deploy-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://reserve-api-19z6.onrender.com/)
+[![Swagger](https://img.shields.io/badge/📘_Swagger-OpenAPI-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://reserve-api-19z6.onrender.com/docs)
+[![Docker](https://img.shields.io/badge/🐳_Docker-Hub-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/airtonsena10/reserve-api)
 
-- Node.js + TypeScript
-- Fastify
-- Drizzle ORM + PostgreSQL
-- Zod (validação)
-- Vitest (testes de integração)
-- Docker + docker-compose
-- Swagger/OpenAPI
-- GitHub Actions (lint + build + testes)
+**[Demo ao vivo](https://reserve-api-19z6.onrender.com/)** · **[Documentação Swagger](https://reserve-api-19z6.onrender.com/docs)** · **[Health check](https://reserve-api-19z6.onrender.com/health)**
+
+---
+
+## Problema que o projeto resolve
+
+Confirmar reservas em APIs REST pode gerar cobranças duplicadas, estados inconsistentes e perda de rastreabilidade quando o cliente reenvia a mesma requisição por timeout ou clique duplo. Sem idempotência e auditoria, fica difícil saber quem confirmou, quando e com qual chave.
+
+## Solução proposta
+
+O Reserve API centraliza reservas de estúdios com:
+
+- Autenticação JWT e CRUD de usuários
+- Gestão de estúdios e reservas com fluxo `pendente → confirmada | cancelada`
+- Confirmação **idempotente** via header `Idempotency-Key`
+- Trilha de auditoria em `reserva_eventos`
+- Documentação interativa com Swagger/OpenAPI
+- Interface web de demonstração
+
+## Funcionalidades
+
+- **Autenticação JWT** — login seguro com bcrypt
+- **CRUD de estúdios** — listagem pública, gestão autenticada
+- **Reservas** — criar, confirmar, cancelar e listar minhas reservas
+- **Idempotência** — advisory lock + persistência de respostas
+- **Auditoria** — histórico completo de transições de status
+- **Demo UI** — teste visual de login, reservas e idempotência
+- **Swagger** — explore e teste todos os endpoints
+
+## 🖥️ Interface
+
+### Demo web
+![Demo](public/screenshots/demo.png)
+*Interface para login, reservas, teste de idempotência e histórico de auditoria*
+
+### Swagger / OpenAPI
+![Swagger](public/screenshots/swagger.png)
+*Documentação interativa com autenticação JWT e todos os endpoints*
+
+## 🚀 Tecnologias Utilizadas
+
+### Backend
+- **Node.js 24** — runtime JavaScript
+- **TypeScript** — tipagem estática
+- **Fastify** — framework HTTP de alta performance
+- **Drizzle ORM** — migrations e queries type-safe
+- **PostgreSQL** — banco relacional
+- **Zod** — validação de variáveis de ambiente e payloads
+- **bcryptjs** — hash de senhas
+- **JWT** — autenticação stateless
+
+### DevOps & Qualidade
+- **Docker** — containerização multi-stage
+- **Vitest** — testes de integração
+- **ESLint** — linting
+- **GitHub Actions** — CI (lint + build + testes)
+- **Render** — deploy em produção
+- **Swagger UI** — documentação OpenAPI
+
+## 📁 Estrutura do Projeto
+
+```
+src/
+├── app.ts              # Montagem Fastify, rotas, Swagger, erros
+├── server.ts           # Bootstrap do servidor
+├── config.ts           # Variáveis de ambiente (Zod)
+├── http.ts             # Erros HTTP padronizados
+├── db/
+│   ├── schema.ts       # Tabelas Drizzle
+│   ├── client.ts       # Pool PostgreSQL + SSL
+│   ├── migrate.ts      # Runner de migrations
+│   └── seed.ts         # Dados iniciais
+├── plugins/
+│   └── auth.ts         # Plugin JWT
+└── routes/
+    ├── auth.ts         # POST /auth/login
+    ├── usuarios.ts     # CRUD de usuários
+    ├── estudios.ts     # CRUD de estúdios + reservar
+    └── reservas.ts     # Confirmar, cancelar, eventos
+
+public/
+├── index.html          # Interface de demo
+└── screenshots/        # Capturas para o README
+
+drizzle/                # Migrations SQL
+tests/                  # Testes de integração
+```
 
 ## Diferenciais
 
@@ -60,7 +141,7 @@ Requisitos: Node.js 24+ e PostgreSQL.
 
 ```bash
 npm install
-cp .env.example .env   # ou crie o .env manualmente
+cp .env.example .env
 npm run db:migrate
 npm run db:seed
 npm run dev
@@ -74,6 +155,7 @@ npm run dev
 | `PORT` | Porta da API | `3000` |
 | `HOST` | Host de bind | `0.0.0.0` |
 | `DATABASE_URL` | Connection string do PostgreSQL | `postgresql://postgres:postgres@localhost:5432/reserve_api` |
+| `DATABASE_SSL` | Força SSL (`true`/`false`). Auto em hosts como Render | auto |
 | `JWT_SECRET` | Segredo do JWT (mín. 16 caracteres) | valor de desenvolvimento |
 | `TEST_DATABASE_URL` | Banco usado nos testes | igual a `DATABASE_URL` |
 
@@ -86,17 +168,6 @@ HOST=0.0.0.0
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/reserve_api
 JWT_SECRET=troque-esta-chave-em-producao-com-32-caracteres
 ```
-
-## Interface web
-
-Acesse http://localhost:3000/ para:
-
-- fazer login
-- listar estúdios e criar reservas
-- confirmar e cancelar reservas
-- testar idempotência (botão "Confirmar 2x")
-- visualizar o histórico de auditoria
-- inspecionar a última resposta da API
 
 ## Endpoints
 
@@ -123,21 +194,21 @@ Acesse http://localhost:3000/ para:
 
 ```bash
 # 1. Login
-curl -X POST http://localhost:3000/auth/login \
+curl -X POST https://reserve-api-19z6.onrender.com/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"airton@example.com","senha":"reserva123"}'
 
 # 2. Reservar (substitua TOKEN e ESTUDIO_ID)
-curl -X POST http://localhost:3000/estudios/ESTUDIO_ID/reservar \
+curl -X POST https://reserve-api-19z6.onrender.com/estudios/ESTUDIO_ID/reservar \
   -H "Authorization: Bearer TOKEN"
 
 # 3. Confirmar com idempotência
-curl -X POST http://localhost:3000/reservas/RESERVA_ID/confirmar \
+curl -X POST https://reserve-api-19z6.onrender.com/reservas/RESERVA_ID/confirmar \
   -H "Authorization: Bearer TOKEN" \
   -H "Idempotency-Key: $(uuidgen)"
 
 # 4. Consultar auditoria
-curl http://localhost:3000/reservas/RESERVA_ID/eventos \
+curl https://reserve-api-19z6.onrender.com/reservas/RESERVA_ID/eventos \
   -H "Authorization: Bearer TOKEN"
 ```
 
@@ -166,6 +237,7 @@ Estados de reserva: `pendente` → `confirmada` | `cancelada`.
 | `npm run db:generate` | Gera migration a partir do schema |
 | `npm run db:migrate` | Aplica migrations |
 | `npm run db:seed` | Popula usuários e estúdios |
+| `npm run db:seed:prod` | Seed via build de produção (Docker) |
 
 ## Testes
 
@@ -188,7 +260,30 @@ A suíte cobre:
 
 O workflow em `.github/workflows/ci.yml` executa lint, build e testes a cada push/PR, com PostgreSQL como serviço.
 
-## Deploy
+## 🚀 Deploy
 
-Use o `Dockerfile` incluído. Configure `DATABASE_URL` e um `JWT_SECRET` forte. Em produção, execute `npm run db:migrate:prod` antes de subir a aplicação.
+### Produção (Render)
 
+[![Live Demo](https://img.shields.io/badge/Demo-reserve--api--19z6.onrender.com-46E3B7?style=flat-square&logo=render&logoColor=white)](https://reserve-api-19z6.onrender.com/)
+[![Swagger](https://img.shields.io/badge/Docs-Swagger_UI-85EA2D?style=flat-square&logo=swagger&logoColor=black)](https://reserve-api-19z6.onrender.com/docs)
+
+## 🔒 Segurança
+
+- **Autenticação JWT** obrigatória nas rotas protegidas
+- **Hash bcrypt** para senhas
+- **Validação Zod** no env e payloads
+- **Idempotency-Key** evita confirmações duplicadas
+- **SSL automático** para Postgres em hosts como Render
+- **Validação de produção** — bloqueia `localhost` e secrets padrão
+
+## 🤝 Contribuição
+
+1. Fork o projeto
+2. Crie uma branch (`git checkout -b feature/minha-feature`)
+3. Commit suas mudanças (`git commit -m 'feat: minha feature'`)
+4. Push para a branch (`git push origin feature/minha-feature`)
+5. Abra um Pull Request
+
+---
+
+Desenvolvido com ❤️ usando Fastify, Drizzle e PostgreSQL
