@@ -10,20 +10,42 @@ API REST de reservas de estúdios com **idempotência** na confirmação e **aud
 
 ---
 
-## Problema que o projeto resolve
+## 🎯 Problema que o projeto resolve
 
-Confirmar reservas em APIs REST pode gerar cobranças duplicadas, estados inconsistentes e perda de rastreabilidade quando o cliente reenvia a mesma requisição por timeout ou clique duplo. Sem idempotência e auditoria, fica difícil saber quem confirmou, quando e com qual chave.
+Imagine o seguinte cenário:
 
-## Solução proposta
+> Um cliente clica em **"Confirmar reserva"**. A internet trava por 2 segundos, sem resposta na tela. Ele clica de novo. Nos bastidores, o app também tenta reenviar automaticamente após o timeout.
+>
+> **Resultado sem proteção:** o servidor recebe 2 ou 3 requisições de confirmação para a mesma reserva. Se cada confirmação gera uma cobrança, um e-mail ou um evento de auditoria, o cliente é cobrado duas vezes e o histórico fica poluído — e ninguém sabe dizer, depois, quem confirmou o quê e quando.
 
-O Reserve API centraliza reservas de estúdios com:
+Esse é um problema comum em qualquer API que expõe uma ação **não repetível** (pagamento, confirmação, envio). As duas causas raiz são:
+
+| Causa | Consequência |
+|-------|---------------|
+| Requisição reenviada (timeout, retry, duplo clique) | Ação executada mais de uma vez |
+| Falta de trilha de auditoria | Impossível saber quem/quando/o quê mudou o status |
+
+## ✅ Solução proposta
+
+O Reserve API resolve isso com duas garantias arquiteturais, aplicadas ao domínio de reservas de estúdios:
+
+| Garantia | Como funciona | Onde ver no código |
+|----------|----------------|----------------------|
+| **Idempotência** | O cliente envia um header `Idempotency-Key` único por tentativa. A 1ª requisição executa e salva a resposta; as seguintes com a **mesma chave** recebem a resposta salva, sem repetir a ação | `src/routes/reservas.ts`, tabela `idempotency_keys` |
+| **Auditoria** | Toda mudança de status (`pendente` → `confirmada`/`cancelada`) grava um evento com usuário, data e metadados | tabela `reserva_eventos` |
+
+Na prática, isso significa:
+
+- Confirmar a mesma reserva 10 vezes com a mesma chave → **1 única confirmação real**, 10 respostas idênticas
+- Qualquer transição de status é rastreável: quem fez, quando, de onde (IP/user-agent)
+- Requisições concorrentes com a mesma chave são serializadas por um **advisory lock** no PostgreSQL, evitando corrida entre duas confirmações simultâneas
+
+Além disso, o projeto entrega a base completa para chegar nesse resultado:
 
 - Autenticação JWT e CRUD de usuários
 - Gestão de estúdios e reservas com fluxo `pendente → confirmada | cancelada`
-- Confirmação **idempotente** via header `Idempotency-Key`
-- Trilha de auditoria em `reserva_eventos`
 - Documentação interativa com Swagger/OpenAPI
-- Interface web de demonstração
+- Interface web de demonstração para ver a idempotência funcionando na prática
 
 ## Funcionalidades
 
@@ -283,6 +305,10 @@ O workflow em `.github/workflows/ci.yml` executa lint, build e testes a cada pus
 3. Commit suas mudanças (`git commit -m 'feat: minha feature'`)
 4. Push para a branch (`git push origin feature/minha-feature`)
 5. Abra um Pull Request
+
+## 📝 Sobre este projeto
+
+Projeto pessoal de estudo, construído explorando back-end (Node.js, Fastify, PostgreSQL) com foco em aplicar na prática conceitos como idempotência, auditoria e deploy em produção. Feedbacks e sugestões são bem-vindos.
 
 ---
 
