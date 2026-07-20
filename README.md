@@ -4,7 +4,7 @@ API REST de reservas de estúdios com **idempotência** na confirmação e **aud
 
 [![Deploy](https://img.shields.io/badge/🚀_Deploy-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://reserve-api-19z6.onrender.com/)
 [![Swagger](https://img.shields.io/badge/📘_Swagger-OpenAPI-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://reserve-api-19z6.onrender.com/docs)
-[![Docker](https://img.shields.io/badge/🐳_Docker-Hub-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/airtonsena10/reserve-api)
+
 
 **[Demo ao vivo](https://reserve-api-19z6.onrender.com/)** · **[Documentação Swagger](https://reserve-api-19z6.onrender.com/docs)** · **[Health check](https://reserve-api-19z6.onrender.com/health)**
 
