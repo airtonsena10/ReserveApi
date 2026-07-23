@@ -1,13 +1,13 @@
 import fastifyStatic from "@fastify/static";
 import sensible from "@fastify/sensible";
-import swagger from "@fastify/swagger";
-import swaggerUi from "@fastify/swagger-ui";
 import Fastify from "fastify";
 import path from "node:path";
 import type { Config } from "./config.js";
 import { loadConfig } from "./config.js";
 import { createDatabase } from "./db/client.js";
 import { HttpError } from "./http.js";
+import { registerOpenApi } from "./openapi/register.js";
+import { apiErrors } from "./openapi/responses.js";
 import { authPlugin } from "./plugins/auth.js";
 import { authRoutes } from "./routes/auth.js";
 import { estudioRoutes } from "./routes/estudios.js";
@@ -25,21 +25,7 @@ export async function buildApp(options: BuildAppOptions = {}) {
   const app = Fastify({ logger: options.logger ?? config.NODE_ENV !== "test" });
 
   await app.register(sensible);
-  await app.register(swagger, {
-    openapi: {
-      info: {
-        title: "Reserve API",
-        description: "API de reservas com idempotência e trilha de auditoria",
-        version: "1.0.0"
-      },
-      components: {
-        securitySchemes: {
-          bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" }
-        }
-      }
-    }
-  });
-  await app.register(swaggerUi, { routePrefix: "/docs" });
+  await registerOpenApi(app);
   await app.register(authPlugin, { config });
 
   await app.register(authRoutes, { prefix: "/auth", db });
@@ -48,7 +34,19 @@ export async function buildApp(options: BuildAppOptions = {}) {
   await app.register(reservaRoutes, { db });
 
   app.get("/health", {
-    schema: { tags: ["Infraestrutura"], summary: "Verifica a saúde da API" }
+    schema: {
+      operationId: "healthCheck",
+      tags: ["Infraestrutura"],
+      summary: "Verifica a saúde da API",
+      description: "Confirma que a API está no ar e consegue consultar o banco de dados.",
+      response: {
+        200: {
+          description: "API operacional",
+          $ref: "HealthResponse#"
+        },
+        500: apiErrors.internal
+      }
+    }
   }, async () => {
     await db.execute("select 1");
     return { status: "ok" };

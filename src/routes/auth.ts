@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { Database } from "../db/client.js";
 import { usuarios } from "../db/schema.js";
 import { HttpError, parseOrThrow } from "../http.js";
+import { publicResponses } from "../openapi/responses.js";
 
 const loginSchema = z.object({
   email: z.email().transform((value) => value.toLowerCase()),
@@ -14,16 +15,21 @@ const loginSchema = z.object({
 export const authRoutes: FastifyPluginAsync<{ db: Database }> = async (app, { db }) => {
   app.post("/login", {
     schema: {
+      operationId: "login",
       tags: ["Autenticação"],
       summary: "Autentica um usuário",
-      body: {
-        type: "object",
-        required: ["email", "senha"],
-        properties: {
-          email: { type: "string", format: "email" },
-          senha: { type: "string", minLength: 6 }
+      description: "Valida e-mail e senha e retorna JWT Bearer válido por 1 hora. Use o token no botão **Authorize** do Swagger UI.",
+      body: { $ref: "LoginRequest#" },
+      response: publicResponses({
+        200: {
+          description: "Login bem-sucedido",
+          $ref: "LoginResponse#"
+        },
+        401: {
+          description: "Credenciais inválidas",
+          $ref: "ErrorResponse#"
         }
-      }
+      })
     }
   }, async (request) => {
     const input = parseOrThrow(loginSchema, request.body);

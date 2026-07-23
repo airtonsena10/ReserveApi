@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { Database } from "../db/client.js";
 import { estudios } from "../db/schema.js";
 import { HttpError, parseOrThrow } from "../http.js";
+import { apiErrors, authResponses, publicResponses } from "../openapi/responses.js";
 
 const paramsSchema = z.object({ id: z.uuid() });
 const estudioSchema = z.object({
@@ -16,11 +17,35 @@ const updateSchema = estudioSchema.partial().refine((value) => Object.keys(value
 
 export const estudioRoutes: FastifyPluginAsync<{ db: Database }> = async (app, { db }) => {
   app.get("/", {
-    schema: { tags: ["Estúdios"], summary: "Lista estúdios" }
+    schema: {
+      operationId: "listEstudios",
+      tags: ["Estúdios"],
+      summary: "Lista estúdios",
+      description: "Retorna todos os estúdios cadastrados, ordenados por data de criação.",
+      response: publicResponses({
+        200: {
+          description: "Lista de estúdios",
+          type: "array",
+          items: { $ref: "Estudio#" }
+        }
+      })
+    }
   }, async () => db.select().from(estudios).orderBy(estudios.createdAt));
 
   app.get("/:id", {
-    schema: { tags: ["Estúdios"], summary: "Consulta um estúdio" }
+    schema: {
+      operationId: "getEstudio",
+      tags: ["Estúdios"],
+      summary: "Consulta um estúdio",
+      params: { $ref: "UuidParam#" },
+      response: publicResponses({
+        200: {
+          description: "Estúdio encontrado",
+          $ref: "Estudio#"
+        },
+        404: apiErrors.notFound
+      })
+    }
   }, async (request) => {
     const { id } = parseOrThrow(paramsSchema, request.params);
     const [estudio] = await db.select().from(estudios).where(eq(estudios.id, id)).limit(1);
@@ -30,7 +55,19 @@ export const estudioRoutes: FastifyPluginAsync<{ db: Database }> = async (app, {
 
   app.post("/", {
     preHandler: app.authenticate,
-    schema: { tags: ["Estúdios"], summary: "Cria um estúdio", security: [{ bearerAuth: [] }] }
+    schema: {
+      operationId: "createEstudio",
+      tags: ["Estúdios"],
+      summary: "Cria um estúdio",
+      security: [{ bearerAuth: [] }],
+      body: { $ref: "CreateEstudioRequest#" },
+      response: authResponses({
+        201: {
+          description: "Estúdio criado",
+          $ref: "Estudio#"
+        }
+      })
+    }
   }, async (request, reply) => {
     const input = parseOrThrow(estudioSchema, request.body);
     const [created] = await db.insert(estudios).values({
@@ -42,7 +79,21 @@ export const estudioRoutes: FastifyPluginAsync<{ db: Database }> = async (app, {
 
   app.patch("/:id", {
     preHandler: app.authenticate,
-    schema: { tags: ["Estúdios"], summary: "Atualiza um estúdio", security: [{ bearerAuth: [] }] }
+    schema: {
+      operationId: "updateEstudio",
+      tags: ["Estúdios"],
+      summary: "Atualiza um estúdio",
+      security: [{ bearerAuth: [] }],
+      params: { $ref: "UuidParam#" },
+      body: { $ref: "UpdateEstudioRequest#" },
+      response: authResponses({
+        200: {
+          description: "Estúdio atualizado",
+          $ref: "Estudio#"
+        },
+        404: apiErrors.notFound
+      })
+    }
   }, async (request) => {
     const { id } = parseOrThrow(paramsSchema, request.params);
     const input = parseOrThrow(updateSchema, request.body);
@@ -59,7 +110,24 @@ export const estudioRoutes: FastifyPluginAsync<{ db: Database }> = async (app, {
 
   app.delete("/:id", {
     preHandler: app.authenticate,
-    schema: { tags: ["Estúdios"], summary: "Exclui um estúdio", security: [{ bearerAuth: [] }] }
+    schema: {
+      operationId: "deleteEstudio",
+      tags: ["Estúdios"],
+      summary: "Exclui um estúdio",
+      security: [{ bearerAuth: [] }],
+      params: { $ref: "UuidParam#" },
+      response: authResponses({
+        204: {
+          description: "Estúdio excluído",
+          type: "null"
+        },
+        404: apiErrors.notFound,
+        409: {
+          description: "Estúdio possui reservas vinculadas",
+          $ref: "ErrorResponse#"
+        }
+      })
+    }
   }, async (request, reply) => {
     const { id } = parseOrThrow(paramsSchema, request.params);
     const [deleted] = await db.delete(estudios).where(eq(estudios.id, id)).returning({ id: estudios.id });

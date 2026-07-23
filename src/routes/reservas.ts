@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { Database } from "../db/client.js";
 import { estudios, idempotencyKeys, reservaEventos, reservas } from "../db/schema.js";
 import { HttpError, parseOrThrow } from "../http.js";
+import { apiErrors, authResponses } from "../openapi/responses.js";
 
 const paramsSchema = z.object({ id: z.uuid() });
 const idempotencyKeySchema = z.string().trim().min(1).max(255);
@@ -20,9 +21,19 @@ export const reservaRoutes: FastifyPluginAsync<{ db: Database }> = async (app, {
   app.post("/estudios/:id/reservar", {
     preHandler: app.authenticate,
     schema: {
+      operationId: "criarReserva",
       tags: ["Reservas"],
       summary: "Cria uma reserva pendente",
-      security: [{ bearerAuth: [] }]
+      description: "Reserva o estúdio informado para o usuário autenticado com status inicial `pendente`.",
+      security: [{ bearerAuth: [] }],
+      params: { $ref: "UuidParam#" },
+      response: authResponses({
+        201: {
+          description: "Reserva criada",
+          $ref: "Reserva#"
+        },
+        404: apiErrors.notFound
+      })
     }
   }, async (request, reply) => {
     const { id: estudioId } = parseOrThrow(paramsSchema, request.params);
@@ -56,9 +67,18 @@ export const reservaRoutes: FastifyPluginAsync<{ db: Database }> = async (app, {
   app.get("/reservas/minhas", {
     preHandler: app.authenticate,
     schema: {
+      operationId: "listMinhasReservas",
       tags: ["Reservas"],
       summary: "Lista as reservas do usuário autenticado",
-      security: [{ bearerAuth: [] }]
+      description: "Retorna apenas reservas do usuário do token JWT, da mais recente para a mais antiga.",
+      security: [{ bearerAuth: [] }],
+      response: authResponses({
+        200: {
+          description: "Lista de reservas do usuário",
+          type: "array",
+          items: { $ref: "Reserva#" }
+        }
+      })
     }
   }, async (request) => {
     return db.select().from(reservas)
@@ -69,14 +89,28 @@ export const reservaRoutes: FastifyPluginAsync<{ db: Database }> = async (app, {
   app.post("/reservas/:id/confirmar", {
     preHandler: app.authenticate,
     schema: {
+      operationId: "confirmarReserva",
       tags: ["Reservas"],
       summary: "Confirma uma reserva de forma idempotente",
+      description: [
+        "Transiciona a reserva de `pendente` para `confirmada`.",
+        "O header **Idempotency-Key** é obrigatório: requisições repetidas com a mesma chave",
+        "retornam a mesma resposta sem duplicar efeitos."
+      ].join(" "),
       security: [{ bearerAuth: [] }],
-      headers: {
-        type: "object",
-        required: ["idempotency-key"],
-        properties: { "idempotency-key": { type: "string", minLength: 1, maxLength: 255 } }
-      }
+      params: { $ref: "UuidParam#" },
+      headers: { $ref: "IdempotencyKeyHeader#" },
+      response: authResponses({
+        200: {
+          description: "Reserva confirmada (ou resposta reutilizada por idempotência)",
+          $ref: "Reserva#"
+        },
+        404: apiErrors.notFound,
+        409: {
+          description: "Transição inválida ou Idempotency-Key reutilizada em outra operação",
+          $ref: "ErrorResponse#"
+        }
+      })
     }
   }, async (request, reply) => {
     const { id: reservaId } = parseOrThrow(paramsSchema, request.params);
@@ -133,15 +167,29 @@ export const reservaRoutes: FastifyPluginAsync<{ db: Database }> = async (app, {
       return { status: 200, body: updated };
     });
 
-    return reply.status(result.status).send(result.body);
+    return reply.status(result.status as 200).send(result.body);
   });
 
   app.post("/reservas/:id/cancelar", {
     preHandler: app.authenticate,
     schema: {
+      operationId: "cancelarReserva",
       tags: ["Reservas"],
       summary: "Cancela uma reserva",
-      security: [{ bearerAuth: [] }]
+      description: "Transiciona a reserva para `cancelada`. Não é possível cancelar uma reserva já cancelada.",
+      security: [{ bearerAuth: [] }],
+      params: { $ref: "UuidParam#" },
+      response: authResponses({
+        200: {
+          description: "Reserva cancelada",
+          $ref: "Reserva#"
+        },
+        404: apiErrors.notFound,
+        409: {
+          description: "Reserva já está cancelada",
+          $ref: "ErrorResponse#"
+        }
+      })
     }
   }, async (request) => {
     const { id: reservaId } = parseOrThrow(paramsSchema, request.params);
@@ -177,9 +225,20 @@ export const reservaRoutes: FastifyPluginAsync<{ db: Database }> = async (app, {
   app.get("/reservas/:id/eventos", {
     preHandler: app.authenticate,
     schema: {
+      operationId: "listReservaEventos",
       tags: ["Reservas"],
       summary: "Consulta o histórico de uma reserva",
-      security: [{ bearerAuth: [] }]
+      description: "Trilha de auditoria ordenada cronologicamente. Apenas o dono da reserva pode consultar.",
+      security: [{ bearerAuth: [] }],
+      params: { $ref: "UuidParam#" },
+      response: authResponses({
+        200: {
+          description: "Eventos da reserva em ordem cronológica",
+          type: "array",
+          items: { $ref: "ReservaEvento#" }
+        },
+        404: apiErrors.notFound
+      })
     }
   }, async (request) => {
     const { id: reservaId } = parseOrThrow(paramsSchema, request.params);
