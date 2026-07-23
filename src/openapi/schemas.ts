@@ -15,19 +15,13 @@ export function registerOpenApiSchemas(app: FastifyInstance) {
     properties: {
       error: {
         type: "string",
-        description: "Código estável do erro (ex.: VALIDATION_ERROR, NOT_FOUND)",
-        example: "VALIDATION_ERROR"
+        description: "Código estável do erro (ex.: VALIDATION_ERROR, NOT_FOUND)"
       },
       message: {
         type: "string",
-        description: "Mensagem legível para o cliente",
-        example: "Dados inválidos"
+        description: "Mensagem legível para o cliente"
       }
-    },
-    examples: [
-      { error: "NOT_FOUND", message: "Recurso não encontrado" },
-      { error: "INVALID_CREDENTIALS", message: "E-mail ou senha inválidos" }
-    ]
+    }
   });
 
   app.addSchema({
@@ -35,7 +29,7 @@ export function registerOpenApiSchemas(app: FastifyInstance) {
     type: "object",
     required: ["status"],
     properties: {
-      status: { type: "string", enum: ["ok"], example: "ok" }
+      status: { type: "string", enum: ["ok"] }
     }
   });
 
@@ -44,8 +38,8 @@ export function registerOpenApiSchemas(app: FastifyInstance) {
     type: "object",
     required: ["email", "senha"],
     properties: {
-      email: { type: "string", format: "email", example: "airton@example.com" },
-      senha: { type: "string", minLength: 6, maxLength: 100, example: "reserva123" }
+      email: { type: "string", format: "email" },
+      senha: { type: "string", minLength: 6, maxLength: 100 }
     }
   });
 
@@ -56,8 +50,7 @@ export function registerOpenApiSchemas(app: FastifyInstance) {
     properties: {
       token: {
         type: "string",
-        description: "JWT Bearer — válido por 1 hora",
-        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        description: "JWT Bearer — válido por 1 hora"
       },
       usuario: { $ref: "UsuarioResumo#" }
     }
@@ -68,9 +61,9 @@ export function registerOpenApiSchemas(app: FastifyInstance) {
     type: "object",
     required: ["nome", "email", "senha"],
     properties: {
-      nome: { type: "string", minLength: 2, maxLength: 120, example: "Airton" },
-      email: { type: "string", format: "email", example: "airton@example.com" },
-      senha: { type: "string", minLength: 6, maxLength: 100, example: "reserva123" }
+      nome: { type: "string", minLength: 2, maxLength: 120 },
+      email: { type: "string", format: "email" },
+      senha: { type: "string", minLength: 6, maxLength: 100 }
     }
   });
 
@@ -79,8 +72,8 @@ export function registerOpenApiSchemas(app: FastifyInstance) {
     type: "object",
     minProperties: 1,
     properties: {
-      nome: { type: "string", minLength: 2, maxLength: 120, example: "Airton Silva" },
-      senha: { type: "string", minLength: 6, maxLength: 100, example: "novaSenha123" }
+      nome: { type: "string", minLength: 2, maxLength: 120 },
+      senha: { type: "string", minLength: 6, maxLength: 100 }
     }
   });
 
@@ -89,9 +82,9 @@ export function registerOpenApiSchemas(app: FastifyInstance) {
     type: "object",
     required: ["id", "nome", "email"],
     properties: {
-      id: { type: "string", format: "uuid", example: "550e8400-e29b-41d4-a716-446655440000" },
-      nome: { type: "string", example: "Airton" },
-      email: { type: "string", format: "email", example: "airton@example.com" }
+      id: { type: "string", format: "uuid" },
+      nome: { type: "string" },
+      email: { type: "string", format: "email" }
     }
   });
 
@@ -100,10 +93,10 @@ export function registerOpenApiSchemas(app: FastifyInstance) {
     type: "object",
     required: ["id", "nome", "email", "createdAt"],
     properties: {
-      id: { type: "string", format: "uuid", example: "550e8400-e29b-41d4-a716-446655440000" },
-      nome: { type: "string", example: "Airton" },
-      email: { type: "string", format: "email", example: "airton@example.com" },
-      createdAt: { type: "string", format: "date-time", example: "2026-07-19T12:00:00.000Z" }
+      id: { type: "string", format: "uuid" },
+      nome: { type: "string" },
+      email: { type: "string", format: "email" },
+      createdAt: { type: "string", format: "date-time" }
     }
   });
 
@@ -112,10 +105,10 @@ export function registerOpenApiSchemas(app: FastifyInstance) {
     type: "object",
     required: ["nome", "bairro", "cidade", "valorDiaria"],
     properties: {
-      nome: { type: "string", minLength: 2, maxLength: 120, example: "Studio Centro" },
-      bairro: { type: "string", minLength: 2, maxLength: 120, example: "Centro" },
-      cidade: { type: "string", minLength: 2, maxLength: 120, example: "São Paulo" },
-      valorDiaria: { type: "number", exclusiveMinimum: 0, example: 199.9 }
+      nome: { type: "string", minLength: 2, maxLength: 120 },
+      bairro: { type: "string", minLength: 2, maxLength: 120 },
+      cidade: { type: "string", minLength: 2, maxLength: 120 },
+      valorDiaria: { type: "number", exclusiveMinimum: 0 }
     }
   });
 
@@ -127,7 +120,7 @@ export function registerOpenApiSchemas(app: FastifyInstance) {
       nome: { type: "string", minLength: 2, maxLength: 120 },
       bairro: { type: "string", minLength: 2, maxLength: 120 },
       cidade: { type: "string", minLength: 2, maxLength: 120 },
-      valorDiaria: { type: "number", exclusiveMinimum: 0, example: 249.9 }
+      valorDiaria: { type: "number", exclusiveMinimum: 0 }
     }
   });
 
@@ -137,10 +130,10 @@ export function registerOpenApiSchemas(app: FastifyInstance) {
     required: ["id", "nome", "bairro", "cidade", "valorDiaria", "createdAt"],
     properties: {
       id: { type: "string", format: "uuid" },
-      nome: { type: "string", example: "Studio Vila Madalena" },
-      bairro: { type: "string", example: "Vila Madalena" },
-      cidade: { type: "string", example: "São Paulo" },
-      valorDiaria: { type: "string", description: "Valor decimal com 2 casas", example: "249.90" },
+      nome: { type: "string" },
+      bairro: { type: "string" },
+      cidade: { type: "string" },
+      valorDiaria: { type: "string", description: "Valor decimal com 2 casas" },
       createdAt: { type: "string", format: "date-time" }
     }
   });
@@ -167,7 +160,10 @@ export function registerOpenApiSchemas(app: FastifyInstance) {
     properties: {
       id: { type: "string", format: "uuid" },
       reservaId: { type: "string", format: "uuid" },
-      statusAnterior: { ...statusReserva, nullable: true },
+      statusAnterior: {
+        type: ["string", "null"],
+        enum: ["pendente", "confirmada", "cancelada", null]
+      },
       statusNovo: statusReserva,
       usuarioId: { type: "string", format: "uuid" },
       criadaEm: { type: "string", format: "date-time" },
@@ -187,8 +183,7 @@ export function registerOpenApiSchemas(app: FastifyInstance) {
       id: {
         type: "string",
         format: "uuid",
-        description: "Identificador UUID do recurso",
-        example: "550e8400-e29b-41d4-a716-446655440000"
+        description: "Identificador UUID do recurso"
       }
     }
   });
@@ -202,8 +197,7 @@ export function registerOpenApiSchemas(app: FastifyInstance) {
         type: "string",
         minLength: 1,
         maxLength: 255,
-        description: "Chave única por operação — requisições repetidas retornam a mesma resposta",
-        example: "550e8400-e29b-41d4-a716-446655440001"
+        description: "Chave única por operação — requisições repetidas retornam a mesma resposta"
       }
     }
   });
