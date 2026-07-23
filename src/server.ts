@@ -23,7 +23,6 @@ process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
 try {
   await app.listen({ port: config.PORT, host: config.HOST });
-  app.log.info("Servidor iniciado");
 } catch (error) {
   app.log.error(error);
   process.exit(1);
