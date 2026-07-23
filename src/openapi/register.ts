@@ -4,7 +4,20 @@ import type { FastifyInstance } from "fastify";
 import { enrichOpenApiWithExamples } from "./examples.js";
 import { registerOpenApiSchemas } from "./schemas.js";
 
-export async function registerOpenApi(app: FastifyInstance) {
+type RegisterOpenApiOptions = {
+  publicUrl?: string;
+};
+
+function buildServers(publicUrl?: string) {
+  const servers = publicUrl
+    ? [{ url: publicUrl.replace(/\/$/, ""), description: "Produção (Render)" }]
+    : [];
+
+  servers.push({ url: "http://localhost:3000", description: "Desenvolvimento local" });
+  return servers;
+}
+
+export async function registerOpenApi(app: FastifyInstance, options: RegisterOpenApiOptions = {}) {
   registerOpenApiSchemas(app);
 
   await app.register(swagger, {
@@ -38,12 +51,7 @@ export async function registerOpenApi(app: FastifyInstance) {
         description: "Demo interativa",
         url: "/"
       },
-      servers: [
-        {
-          url: "http://localhost:3000",
-          description: "Desenvolvimento local"
-        }
-      ],
+      servers: buildServers(options.publicUrl),
       tags: [
         { name: "Infraestrutura", description: "Health check e disponibilidade" },
         { name: "Autenticação", description: "Login e emissão de JWT Bearer" },

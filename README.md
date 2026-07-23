@@ -179,6 +179,7 @@ npm run dev
 | `DATABASE_URL` | Connection string do PostgreSQL | `postgresql://postgres:postgres@localhost:5432/reserve_api` |
 | `DATABASE_SSL` | Força SSL (`true`/`false`). Auto em hosts como Render | auto |
 | `JWT_SECRET` | Segredo do JWT (mín. 16 caracteres) | valor de desenvolvimento |
+| `PUBLIC_URL` | URL pública da API (Swagger). No Render, `RENDER_EXTERNAL_URL` é usada automaticamente | auto |
 | `TEST_DATABASE_URL` | Banco usado nos testes | igual a `DATABASE_URL` |
 
 Exemplo de `.env`:
@@ -288,6 +289,10 @@ O workflow em `.github/workflows/ci.yml` executa lint, build e testes a cada pus
 
 [![Live Demo](https://img.shields.io/badge/Demo-reserve--api--19z6.onrender.com-46E3B7?style=flat-square&logo=render&logoColor=white)](https://reserve-api-19z6.onrender.com/)
 [![Swagger](https://img.shields.io/badge/Docs-Swagger_UI-85EA2D?style=flat-square&logo=swagger&logoColor=black)](https://reserve-api-19z6.onrender.com/docs)
+
+**Start command no Render:** `npm run start:prod` (aplica migrations, seed e sobe a API).
+
+Usuários demo criados automaticamente no seed: `airton@example.com` / `sena@example.com` — senha `reserva123`.
 
 ## 🔒 Segurança
 

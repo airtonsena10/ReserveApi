@@ -17,4 +17,4 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/drizzle ./drizzle
 USER node
 EXPOSE 3000
-CMD ["sh", "-c", "npm run db:migrate:prod && npm start"]
+CMD ["sh", "-c", "npm run db:migrate:prod && npm run db:seed:prod && npm start"]

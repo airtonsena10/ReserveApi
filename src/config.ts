@@ -11,7 +11,8 @@ const envSchema = z.object({
     .string()
     .default("postgresql://postgres:postgres@localhost:5432/reserve_api"),
   JWT_SECRET: z.string().min(16).default(DEFAULT_JWT_SECRET),
-  DATABASE_SSL: z.enum(["true", "false"]).optional()
+  DATABASE_SSL: z.enum(["true", "false"]).optional(),
+  PUBLIC_URL: z.string().optional()
 });
 
 export type Config = z.infer<typeof envSchema>;
@@ -36,6 +37,20 @@ function assertProductionConfig(config: Config): void {
       "JWT_SECRET é obrigatório em produção. Use uma chave forte com pelo menos 16 caracteres."
     );
   }
+}
+
+export function resolvePublicUrl(config: Config): string | undefined {
+  const fromConfig = config.PUBLIC_URL?.trim();
+  if (fromConfig) {
+    try {
+      return new URL(fromConfig).origin;
+    } catch {
+      return undefined;
+    }
+  }
+
+  const fromRender = process.env.RENDER_EXTERNAL_URL?.trim();
+  return fromRender || undefined;
 }
 
 export function loadConfig(overrides: Partial<Config> = {}): Config {

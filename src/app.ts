@@ -3,7 +3,7 @@ import sensible from "@fastify/sensible";
 import Fastify from "fastify";
 import path from "node:path";
 import type { Config } from "./config.js";
-import { loadConfig } from "./config.js";
+import { loadConfig, resolvePublicUrl } from "./config.js";
 import { createDatabase } from "./db/client.js";
 import { HttpError } from "./http.js";
 import { registerOpenApi } from "./openapi/register.js";
@@ -25,7 +25,7 @@ export async function buildApp(options: BuildAppOptions = {}) {
   const app = Fastify({ logger: options.logger ?? config.NODE_ENV !== "test" });
 
   await app.register(sensible);
-  await registerOpenApi(app);
+  await registerOpenApi(app, { publicUrl: resolvePublicUrl(config) });
   await app.register(authPlugin, { config });
 
   await app.register(authRoutes, { prefix: "/auth", db });
