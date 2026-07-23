@@ -1,9 +1,7 @@
-import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { loadConfig } from "../config.js";
-import { createDatabase } from "./client.js";
+import { runMigrations } from "./run-migrate.js";
 
 const config = loadConfig();
-const { db, pool } = createDatabase(config);
 
 function databaseHost(databaseUrl: string): string {
   try {
@@ -16,13 +14,9 @@ function databaseHost(databaseUrl: string): string {
 console.log(`Aplicando migrations em ${databaseHost(config.DATABASE_URL)}...`);
 
 try {
-  await migrate(db, { migrationsFolder: "drizzle" });
+  await runMigrations(config);
   console.log("Migrations aplicadas com sucesso");
 } catch (error) {
   console.error("Falha ao aplicar migrations:", error);
-  process.exitCode = 1;
-} finally {
-  await pool.end();
+  process.exit(1);
 }
-
-if (process.exitCode) process.exit(process.exitCode);
