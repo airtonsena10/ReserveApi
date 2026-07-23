@@ -1,6 +1,7 @@
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import type { FastifyInstance } from "fastify";
+import { enrichOpenApiWithExamples } from "./examples.js";
 import { registerOpenApiSchemas } from "./schemas.js";
 
 export async function registerOpenApi(app: FastifyInstance) {
@@ -60,6 +61,17 @@ export async function registerOpenApi(app: FastifyInstance) {
           }
         }
       }
+    },
+    refResolver: {
+      buildLocalReference(json, _baseUri, _fragment, i) {
+        return (json.$id as string | undefined) ?? `def-${i}`;
+      }
+    },
+    transformObject: (documentObject) => {
+      if ("openapiObject" in documentObject) {
+        return enrichOpenApiWithExamples(documentObject.openapiObject);
+      }
+      return documentObject.swaggerObject;
     }
   });
 
